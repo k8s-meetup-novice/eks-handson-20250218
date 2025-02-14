@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-after
+spec:
+  serviceAccountName: eks-wakaran-handson-sa
+  containers:
+    - name: my-aws-cli
+      image: amazon/aws-cli:latest
+      args: ['s3', 'ls', 'eks-wakaran-handson-s3-<ランダムな文字列>']
+  restartPolicy: Never
