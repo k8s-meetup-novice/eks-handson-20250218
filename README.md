@@ -14,7 +14,7 @@
 ![alt text](images/image-codespace2.png)
 
 
-...を選択し、「Create codespace」をクリックします。
+Repositoryに「k8s-meetup-novice/eks-handson-20250218」を選択し、「Create codespace」をクリックします。
 
 ![alt text](images/image-codespace3.png)
 
@@ -75,6 +75,30 @@ make plan
 make apply
 ```
 
+以下のような確認が求められるので`yes`と入力します。
+
+```
+...
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes <--- ここでyesと入力してください
+```
+
+コマンドの実行が正常に完了すると、以下のように表示されます。(コマンドの実行には約10~15分程度要します。)
+
+```
+Apply complete! Resources: 62 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+cluster_endpoint = "https://XXXXXXX.ap-northeast-1.eks.amazonaws.com"
+cluster_name = "eks-wakaran-handson-cluster"
+cluster_security_group_id = "sg-XXXXXXXXX"
+region = "ap-northeast-1"
+```
+
 EKSおよびECR, S3が作成されたことを確認します。
 
 ![alt text](images/image-eks.png)
@@ -98,8 +122,8 @@ kubectlでNodeが表示されることを確認します。
 ```
 $ kubectl get nodes
 NAME                                              STATUS   ROLES    AGE   VERSION
-ip-172-17-1-126.ap-northeast-1.compute.internal   Ready    <none>   17m   v1.27.16-eks-a737599
-ip-172-17-3-204.ap-northeast-1.compute.internal   Ready    <none>   18m   v1.27.16-eks-a737599
+ip-172-17-1-126.ap-northeast-1.compute.internal   Ready    <none>   17m   v1.30.8-eks-aeac579
+ip-172-17-3-204.ap-northeast-1.compute.internal   Ready    <none>   18m   v1.30.8-eks-aeac579
 ```
 
 ### 2-2. Load Balancer Controllerのデプロイ
@@ -242,6 +266,8 @@ nginx-from-ecr   1/1     Running   0          34s
 
 
 ## 4. IRSA
+EKSでは[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)と呼ばれる仕組みにより、Kubernetesの[ServiceAccount](https://kubernetes.io/docs/concepts/security/service-accounts/)にAWSのIAMロールを紐づけることで、PodからAWSのサービスにアクセスすることができます。
+ここではIRSAを利用して、EKSにデプロイしたPodからS3のバケットにアクセスします。
 
 以下のコマンドを用いて、S3のバケット名を取得します。
 
@@ -431,6 +457,32 @@ $ kubectl logs pod-after
 
 1. ECRにあるコンテナイメージの削除
 2. S3のバケット内にあるファイルの削除
-3. Serviceの削除 (kubectl delete -f /workspaces/eks-handson-private/scripts/service.yaml) -> Load Balancerが削除されていることを確認
-4. リソースの削除 (cd /workspaces/eks-handson-private/tffiles/; make destroy)
+3. Serviceの削除
+
+```
+$ kubectl delete -f /workspaces/eks-handson-private/scripts/service.yaml
+```
+
+コマンドを実行後、GUIでLoad Balancerが削除されていることを確認します。
+
+4. リソースの削除
+
+```
+$ cd /workspaces/eks-handson-private/tffiles
+
+$ make destroy
+
+...
+
+Do you really want to destroy all resources?
+  Terraform will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value: yes <--- ここでyesと入力してください
+```
+
 5. IAMのPolicies及びRolesにて、「wakaran」というワードの入った名前のリソースを削除
+
+6. IAMのUserにてハンズオンに使用したユーザー名を選択し、ハンズオン用に作成したAccess key(Description: `eks-wakaran-handson`)を無効化および削除
+
+7. codespaceの削除
