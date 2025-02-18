@@ -103,6 +103,7 @@ eks-wakaran-handson
 
 
 表示された「`Access key`」および「`Secret access key`」を控え、「`Download .csv file`」を選択した後、「`Done`」を選択します。
+
 ※シークレットアクセスキーはこの画面を閉じると二度と参照できなくなるため、必ずこの時点でファイルをダウンロードしてください。なお、ダウンロードしたファイルには機密情報が含まれているため、取り扱いには十分注意してください。
 
 ここで取得したAWSアクセスキー情報は、以降のハンズオン手順でGitHub Codespace内のターミナルから実行するコマンドで使用します。
@@ -494,9 +495,9 @@ eksctl create iamserviceaccount \
   --namespace default \
   --cluster eks-wakaran-handson-cluster \
   --approve \
-  --attach-policy-arn $(aws iam list-policies --query 'Policies[?PolicyName==`AmazonS3ReadOnlyAccess`].Arn' --output text) 
+  --attach-policy-arn $(aws iam list-policies --query 'Policies[?PolicyName==`AmazonS3ReadOnlyAccess`].Arn' --output text)
 ```
-  
+
 以下のような結果が出力されることを確認します。
 ```
 2025-02-17 14:55:35 [ℹ]  created serviceaccount "default/eks-wakaran-handson-sa"
@@ -669,7 +670,7 @@ Do you really want to destroy all resources?
 
 7. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
 
-7. `codespace`の削除
+8. `codespace`の削除
 
 ## 補足情報
 ### (補足1) リソースが削除されたことの確認方法
@@ -698,6 +699,7 @@ Resource Groups
 を入力し「`Add`」をクリックして、「`Search resources`」を選択します。
 
 「`Resource search results`」に何も表示されなければ、ハンズオンに使用した全てのリソースの削除が完了していることになります。
+
 `6. クリーンアップ`を実施後になんらかのリソースが残存しているようであれば、手動でリソースの削除を行なってください。
 
 ![alt text](images/tag3.png)
@@ -706,6 +708,7 @@ Resource Groups
 
 東京リージョン内でのVPC数が上限に達している場合には、別リージョンで作業する必要があります。
 以下に、オレゴンリージョンを指定する場合の手順を記載します。
+
 ※VPC数の制限値引き上げ申請も可能ですが、即時引き上げはできないため今回は別リージョンでの作業を行うこととします。
 
 #### 現状確認
