@@ -599,7 +599,7 @@ Do you really want to destroy all resources?
 
 6. `IAM`の`Users`にてハンズオンに使用したユーザー(`eks-wakaran-user`)を削除
 
-7. `IAM`の`ID プロバイダ `にてハンズオンに使用したIDプロバイダを削除
+7. `IAM`の`ID プロバイダ`にてハンズオンに使用したIDプロバイダを削除
 
 8. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
 
