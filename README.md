@@ -598,7 +598,21 @@ Do you really want to destroy all resources?
 
 7. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
 
-7. `codespace`の削除
+8. 下記のコマンドで `scripts/deploy_lb_controller.sh` 内で作成したCloudFormationを削除
+
+```
+eksctl delete iamserviceaccount \
+  --cluster=eks-wakaran-handson-cluster \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller
+
+eksctl delete iamserviceaccount \
+  --cluster=eks-wakaran-handson-cluster \
+  --name eks-wakaran-handson-sa \
+  --namespace default
+```
+
+9. `codespace`の削除
 
 
 ### (補足) リソースが削除されたことの確認方法
