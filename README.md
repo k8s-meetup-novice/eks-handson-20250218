@@ -592,13 +592,18 @@ Do you really want to destroy all resources?
   Enter a value: yes <--- ここでyesと入力してください
 ```
 
+> [!NOTE]
+> `terraform destroy` 実行中にUsersを削除してしまうと `terraform destroy` が途中で失敗してしまう可能性があるので、これ以降のクリーンアッププロセスは `make destroy` が完了してから行ってください
+
 5. `IAM`の`Policies`及び`Roles`にて、「`wakaran`」というワードの入った名前のリソースを削除
 
 6. `IAM`の`Users`にてハンズオンに使用したユーザー(`eks-wakaran-user`)を削除
 
-7. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
+7. `IAM`の`ID プロバイダ `にてハンズオンに使用したIDプロバイダを削除
 
-8. 下記のコマンドで `scripts/deploy_lb_controller.sh` 内で作成したCloudFormationを削除
+8. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
+
+9. 下記のコマンドで `scripts/deploy_lb_controller.sh` 内で作成したCloudFormationを削除
 
 ```
 eksctl delete iamserviceaccount \
@@ -612,8 +617,10 @@ eksctl delete iamserviceaccount \
   --namespace default
 ```
 
-9. `codespace`の削除
+10. `codespace`の削除
 
+> [!NOTE]
+> codespaceを削除すると `tffiles/terraform.tfstate` が削除されてしまうため、`make destroy` によるterraform destroyの実行後に削除してください
 
 ### (補足) リソースが削除されたことの確認方法
 本ハンズオンで作成した全てのリソースには`Project: eks-wakaran`というタグが付与されています。
