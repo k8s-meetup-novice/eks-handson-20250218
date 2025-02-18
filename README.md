@@ -433,6 +433,8 @@ spec:
       args: ['s3', 'ls', '${S3_BUCKET_NAME}']
   restartPolicy: Never
 EOF
+
+cat pod-before.yaml
 ```
 
 `pod-before.yaml`というマニフェストファイルが、`scripts`ディレクトリに保存されます。
@@ -529,6 +531,8 @@ spec:
       args: ['s3', 'ls', '${S3_BUCKET_NAME}']
   restartPolicy: Never
 EOF
+
+cat pod-after.yaml
 ```
 
 `pod-after.yaml`というマニフェストファイルが、`scripts`ディレクトリに保存されます。
