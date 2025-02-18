@@ -172,7 +172,7 @@ An error occurred (SignatureDoesNotMatch) when calling the GetCallerIdentity ope
 以下のコマンドを用いて、リソース作成計画が「`Plan: 62 to add, 0 to change, 0 to destroy.`」という形で表示されることを確認します。
 
 ```bash
-cd tffiles
+cd /workspaces/eks-handson-20250218/tffiles
 make plan
 ```
 
@@ -240,7 +240,7 @@ ip-172-17-3-204.ap-northeast-1.compute.internal   Ready    <none>   18m   v1.30.
 `scripts`ディレクトリに移動し、`deploy_lb_controller.sh`を実行します。
 
 ```bash
-cd ../scripts
+cd /workspaces/eks-handson-20250218/scripts
 bash deploy_lb_controller.sh
 ```
 
