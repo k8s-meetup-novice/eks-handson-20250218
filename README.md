@@ -27,6 +27,7 @@ k8s-meetup-novice/eks-handson-20250218
 
 ### 0-2. IAMユーザーの作成
 [AWSマネジメントコンソール](https://aws.amazon.com/jp/console/)にルートユーザーでログインします。
+※本手順はルートユーザーでの操作を前提としていますが、IAM操作権限を持つ既存のIAMユーザーでも実施可能です。その場合は、ご利用中のIAMユーザーで以降の手順を進めてください。
 
 ![alt text](images/iam-user1.png)
 
@@ -102,6 +103,10 @@ eks-wakaran-handson
 
 
 表示された「`Access key`」および「`Secret access key`」を控え、「`Download .csv file`」を選択した後、「`Done`」を選択します。
+※シークレットアクセスキーはこの画面を閉じると二度と参照できなくなるため、必ずこの時点でファイルをダウンロードしてください。なお、ダウンロードしたファイルには機密情報が含まれているため、取り扱いには十分注意してください。
+
+ここで取得したAWSアクセスキー情報は、以降のハンズオン手順でGitHub Codespace内のターミナルから実行するコマンドで使用します。
+アクセスキー情報は安全に保管し、次のステップで環境変数として設定します。
 
 ![alt text](images/accesskey-copy.png)
 
@@ -348,7 +353,7 @@ Pullしたコンテナイメージに[イメージタグ](https://docs.docker.co
 docker tag nginx ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
-`ECR`にローカルのコンテナイメージを取得します。
+`ECR`にローカルのコンテナイメージをPushします。
 
 ```bash
 docker push ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
@@ -532,6 +537,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: pod-after
+  namespace: default
 spec:
   serviceAccountName: eks-wakaran-handson-sa
   containers:
