@@ -27,6 +27,7 @@ k8s-meetup-novice/eks-handson-20250218
 
 ### 0-2. IAMユーザーの作成
 [AWSマネジメントコンソール](https://aws.amazon.com/jp/console/)にルートユーザーでログインします。
+※本手順はルートユーザーでの操作を前提としていますが、IAM操作権限を持つ既存のIAMユーザーでも実施可能です。その場合は、ご利用中のIAMユーザーで以降の手順を進めてください。
 
 ![alt text](images/iam-user1.png)
 
@@ -103,6 +104,11 @@ eks-wakaran-handson
 
 表示された「`Access key`」および「`Secret access key`」を控え、「`Download .csv file`」を選択した後、「`Done`」を選択します。
 
+※シークレットアクセスキーはこの画面を閉じると二度と参照できなくなるため、必ずこの時点でファイルをダウンロードしてください。なお、ダウンロードしたファイルには機密情報が含まれているため、取り扱いには十分注意してください。
+
+ここで取得したAWSアクセスキー情報は、以降のハンズオン手順でGitHub Codespace内のターミナルから実行するコマンドで使用します。
+アクセスキー情報は安全に保管し、次のステップで環境変数として設定します。
+
 ![alt text](images/accesskey-copy.png)
 
 `eks-wakaran-user`の詳細画面にて、`Access keys`が作成されたことを確認します。
@@ -167,7 +173,7 @@ An error occurred (SignatureDoesNotMatch) when calling the GetCallerIdentity ope
 以下のコマンドを用いて、リソース作成計画が「`Plan: 62 to add, 0 to change, 0 to destroy.`」という形で表示されることを確認します。
 
 ```bash
-cd tffiles
+cd /workspaces/eks-handson-20250218/tffiles
 make plan
 ```
 
@@ -235,7 +241,7 @@ ip-172-17-3-204.ap-northeast-1.compute.internal   Ready    <none>   18m   v1.30.
 `scripts`ディレクトリに移動し、`deploy_lb_controller.sh`を実行します。
 
 ```bash
-cd ../scripts
+cd /workspaces/eks-handson-20250218/scripts
 bash deploy_lb_controller.sh
 ```
 
@@ -339,19 +345,19 @@ docker pull nginx
 
 ```bash
 ACCOUNT_ID=`aws sts get-caller-identity | jq -r '.Account'`
-aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com
+aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
 ```
 
 Pullしたコンテナイメージに[イメージタグ](https://docs.docker.com/reference/cli/docker/image/tag/)を付与します。
 
 ```bash
-docker tag nginx ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
+docker tag nginx ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
-`ECR`にローカルのコンテナイメージを取得します。
+`ECR`にローカルのコンテナイメージをPushします。
 
 ```bash
-docker push ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
+docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
 AWSマネジメントコンソールから、`ECR`にコンテナイメージが格納されていることを確認します。
@@ -363,7 +369,7 @@ AWSマネジメントコンソールから、`ECR`にコンテナイメージが
 以下のコマンドでは`ECR`に格納したコンテナイメージ(`eks-wakaran-handson-ecr:aws-waiwai`)を指定して、EKSに`Pod`を作成します。
 
 ```bash
-kubectl run nginx-from-ecr --image ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
+kubectl run nginx-from-ecr --image ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
 作成した`Pod`が起動していることを確認します。
@@ -428,6 +434,8 @@ spec:
       args: ['s3', 'ls', '${S3_BUCKET_NAME}']
   restartPolicy: Never
 EOF
+
+cat pod-before.yaml
 ```
 
 `pod-before.yaml`というマニフェストファイルが、`scripts`ディレクトリに保存されます。
@@ -475,7 +483,7 @@ An error occurred (AccessDenied) ... is not authorized to perform: s3:ListBucket
 まず、`IAM OIDCプロバイダー`を作成します。
 
 ```bash
-eksctl utils associate-iam-oidc-provider --region=ap-northeast-1 --cluster=eks-wakaran-handson-cluster --approve
+eksctl utils associate-iam-oidc-provider --region=${AWS_DEFAULT_REGION} --cluster=eks-wakaran-handson-cluster --approve
 ```
 
 次に`Pod`から`S3バケット`の参照が行えるよう、`IRSA`を利用するための`ServiceAccount`と`IAMロール`を`eksctl`コマンドを用いて作成します。
@@ -487,9 +495,9 @@ eksctl create iamserviceaccount \
   --namespace default \
   --cluster eks-wakaran-handson-cluster \
   --approve \
-  --attach-policy-arn $(aws iam list-policies --query 'Policies[?PolicyName==`AmazonS3ReadOnlyAccess`].Arn' --output text) 
+  --attach-policy-arn $(aws iam list-policies --query 'Policies[?PolicyName==`AmazonS3ReadOnlyAccess`].Arn' --output text)
 ```
-  
+
 以下のような結果が出力されることを確認します。
 ```
 2025-02-17 14:55:35 [ℹ]  created serviceaccount "default/eks-wakaran-handson-sa"
@@ -524,6 +532,8 @@ spec:
       args: ['s3', 'ls', '${S3_BUCKET_NAME}']
   restartPolicy: Never
 EOF
+
+cat pod-after.yaml
 ```
 
 `pod-after.yaml`というマニフェストファイルが、`scripts`ディレクトリに保存されます。
@@ -532,6 +542,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: pod-after
+  namespace: default
 spec:
   serviceAccountName: eks-wakaran-handson-sa
   containers:
@@ -568,7 +579,68 @@ kubectl logs pod-after
 ## 6. クリーンアップ
 
 1. `ECR`に格納されているコンテナイメージの削除
+
+リポジトリ名を確認します：
+
+```bash
+ACCOUNT_ID=`aws sts get-caller-identity | jq -r '.Account'`
+aws ecr describe-repositories --repository-names eks-wakaran-handson-ecr
+```
+
+現在のイメージを確認します：
+
+```bash
+aws ecr describe-images \
+  --repository-name eks-wakaran-handson-ecr \
+  --query 'imageDetails[*].imageTags[*]' \
+  --output text
+# aws-waiwaiタグが表示されることを確認
+```
+
+イメージを削除します：
+
+```bash
+aws ecr batch-delete-image \
+  --repository-name eks-wakaran-handson-ecr \
+  --image-ids imageTag=aws-waiwai
+```
+
+削除後、イメージが削除されたことを確認します：
+
+```bash
+aws ecr describe-images --repository-name eks-wakaran-handson-ecr
+# エラーが返ってくるか、空の結果が表示されることを確認
+```
+
 2. `S3バケット`内にあるファイルの削除
+
+バケット名を確認します：
+
+```bash
+S3_BUCKET_NAME=$(aws s3 ls | grep eks-wakaran-handson-s3 | awk '{print $3}')
+echo $S3_BUCKET_NAME
+```
+
+バケット内のファイルを確認します：
+
+```bash
+aws s3 ls s3://${S3_BUCKET_NAME}
+```
+
+バケット内のファイルをすべて削除します：
+
+```bash
+aws s3 rm s3://${S3_BUCKET_NAME} --recursive
+```
+
+削除後、バケット内が空になっていることを確認します：
+
+```bash
+aws s3 ls s3://${S3_BUCKET_NAME}
+# 出力がないことを確認
+```
+
+
 3. `Service`の削除
 
 ```bash
@@ -594,14 +666,92 @@ Do you really want to destroy all resources?
 
 5. `IAM`の`Policies`及び`Roles`にて、「`wakaran`」というワードの入った名前のリソースを削除
 
+「`wakaran`」を含むポリシーを検索します：
+
+```bash
+aws iam list-policies --scope Local --query 'Policies[?contains(PolicyName, `wakaran`)].Arn' --output text
+```
+
+「`wakaran`」を含むポリシーを削除します：
+
+```bash
+# ポリシーの ARN を取得して、各ポリシーに対して処理を実行
+aws iam list-policies --scope Local --query 'Policies[?contains(PolicyName, `wakaran`)].Arn' --output text | \
+  while read -r policy_arn; do
+    echo "Processing policy: ${policy_arn}"
+
+    # ポリシーがアタッチされているロールを取得してデタッチ
+    aws iam list-entities-for-policy --policy-arn "${policy_arn}" --query 'PolicyRoles[*].RoleName' --output text | \
+      while read -r role_name; do
+        if [ ! -z "${role_name}" ]; then
+          echo "Detaching policy from role: ${role_name}"
+          aws iam detach-role-policy --role-name "${role_name}" --policy-arn "${policy_arn}"
+        fi
+      done
+
+    # ポリシーがアタッチされているユーザーを取得してデタッチ
+    aws iam list-entities-for-policy --policy-arn "${policy_arn}" --query 'PolicyUsers[*].UserName' --output text | \
+      while read -r user_name; do
+        if [ ! -z "${user_name}" ]; then
+          echo "Detaching policy from user: ${user_name}"
+          aws iam detach-user-policy --user-name "${user_name}" --policy-arn "${policy_arn}"
+        fi
+      done
+
+    # ポリシーを削除
+    echo "Deleting policy: ${policy_arn}"
+    aws iam delete-policy --policy-arn "${policy_arn}"
+  done
+```
+
+「`wakaran`」を含むロールを検索します：
+
+```bash
+aws iam list-roles --query 'Roles[?contains(RoleName, `wakaran`)].RoleName' --output text
+```
+
+「`wakaran`」を含むロールを削除します：
+
+```bash
+# wakaranを含むロールを検索して削除
+aws iam list-roles --query 'Roles[?contains(RoleName, `wakaran`)].RoleName' --output text | tr '\t' '\n' | \
+  while read -r role_name; do
+    if [ ! -z "${role_name}" ]; then
+      echo "Processing role: ${role_name}"
+
+      # アタッチされているマネージドポリシーをデタッチ
+      aws iam list-attached-role-policies --role-name "${role_name}" --query 'AttachedPolicies[*].PolicyArn' --output text | tr '\t' '\n' | \
+        while read -r policy_arn; do
+          if [ ! -z "${policy_arn}" ]; then
+            echo "Detaching managed policy: ${policy_arn} from role: ${role_name}"
+            aws iam detach-role-policy --role-name "${role_name}" --policy-arn "${policy_arn}"
+          fi
+        done
+
+      # インラインポリシーを削除
+      aws iam list-role-policies --role-name "${role_name}" --query 'PolicyNames[]' --output text | \
+        while read -r policy_name; do
+          if [ ! -z "${policy_name}" ]; then
+            echo "Removing inline policy: ${policy_name} from role: ${role_name}"
+            aws iam delete-role-policy --role-name "${role_name}" --policy-name "${policy_name}"
+          fi
+        done
+
+      # ロールを削除
+      echo "Deleting role: ${role_name}"
+      aws iam delete-role --role-name "${role_name}"
+    fi
+  done
+```
+
 6. `IAM`の`Users`にてハンズオンに使用したユーザー(`eks-wakaran-user`)を削除
 
 7. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
 
-7. `codespace`の削除
+8. `codespace`の削除
 
-
-### (補足) リソースが削除されたことの確認方法
+## 補足情報
+### (補足1) リソースが削除されたことの確認方法
 本ハンズオンで作成した全てのリソースには`Project: eks-wakaran`というタグが付与されています。
 [Resource Groups & Tag Editor](https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html)を用いて該当タグが付与されたリソースを検索し、全てのリソースが削除されていることを確認することができます。
 
@@ -624,9 +774,46 @@ Resource Groups
 - `Resource types`:     `All supported resource types`
 - `Tag key`:            `Project`
 - `Optional tag value`: `eks-wakaran`
-を入力し、「`Search resources`」を選択します。
+を入力し「`Add`」をクリックして、「`Search resources`」を選択します。
 
 「`Resource search results`」に何も表示されなければ、ハンズオンに使用した全てのリソースの削除が完了していることになります。
+
 `6. クリーンアップ`を実施後になんらかのリソースが残存しているようであれば、手動でリソースの削除を行なってください。
 
 ![alt text](images/tag3.png)
+
+### (補足2) VPC数の制限に関して
+
+東京リージョン内でのVPC数が上限に達している場合には、別リージョンで作業する必要があります。
+以下に、オレゴンリージョンを指定する場合の手順を記載します。
+
+※VPC数の制限値引き上げ申請も可能ですが、即時引き上げはできないため今回は別リージョンでの作業を行うこととします。
+
+#### 現状確認
+
+```bash
+# 特定のリージョンでのVPCの現在数を確認
+aws ec2 describe-vpcs --region "${AWS_DEFAULT_REGION}" --query 'Vpcs[].VpcId' --output text | wc -w
+
+# VPCの制限値を確認
+aws service-quotas get-service-quota \
+    --service-code vpc \
+    --quota-code L-F678F1CE \
+    --region "${AWS_DEFAULT_REGION}"
+```
+
+#### リージョン指定の変更
+
+オレゴンリージョンに変更する場合の手順です（オレゴンである必要はありません）：
+
+```bash
+# 環境変数を変更
+export AWS_DEFAULT_REGION=us-west-2
+echo "AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}"
+```
+
+```bash
+# vars.tf 内のリージョン指定を変更
+sed -i 's/ap-northeast-1/us-west-2/' vars.tf
+cat vars.tf | grep default
+```
