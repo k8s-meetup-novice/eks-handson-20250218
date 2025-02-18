@@ -666,6 +666,84 @@ Do you really want to destroy all resources?
 
 5. `IAM`の`Policies`及び`Roles`にて、「`wakaran`」というワードの入った名前のリソースを削除
 
+「`wakaran`」を含むポリシーを検索します：
+
+```bash
+aws iam list-policies --scope Local --query 'Policies[?contains(PolicyName, `wakaran`)].Arn' --output text
+```
+
+「`wakaran`」を含むポリシーを削除します：
+
+```bash
+# ポリシーの ARN を取得して、各ポリシーに対して処理を実行
+aws iam list-policies --scope Local --query 'Policies[?contains(PolicyName, `wakaran`)].Arn' --output text | \
+  while read -r policy_arn; do
+    echo "Processing policy: ${policy_arn}"
+
+    # ポリシーがアタッチされているロールを取得してデタッチ
+    aws iam list-entities-for-policy --policy-arn "${policy_arn}" --query 'PolicyRoles[*].RoleName' --output text | \
+      while read -r role_name; do
+        if [ ! -z "${role_name}" ]; then
+          echo "Detaching policy from role: ${role_name}"
+          aws iam detach-role-policy --role-name "${role_name}" --policy-arn "${policy_arn}"
+        fi
+      done
+
+    # ポリシーがアタッチされているユーザーを取得してデタッチ
+    aws iam list-entities-for-policy --policy-arn "${policy_arn}" --query 'PolicyUsers[*].UserName' --output text | \
+      while read -r user_name; do
+        if [ ! -z "${user_name}" ]; then
+          echo "Detaching policy from user: ${user_name}"
+          aws iam detach-user-policy --user-name "${user_name}" --policy-arn "${policy_arn}"
+        fi
+      done
+
+    # ポリシーを削除
+    echo "Deleting policy: ${policy_arn}"
+    aws iam delete-policy --policy-arn "${policy_arn}"
+  done
+```
+
+「`wakaran`」を含むロールを検索します：
+
+```bash
+aws iam list-roles --query 'Roles[?contains(RoleName, `wakaran`)].RoleName' --output text
+```
+
+「`wakaran`」を含むロールを削除します：
+
+```bash
+# wakaranを含むロールを検索して削除
+aws iam list-roles --query 'Roles[?contains(RoleName, `wakaran`)].RoleName' --output text | tr '\t' '\n' | \
+  while read -r role_name; do
+    if [ ! -z "${role_name}" ]; then
+      echo "Processing role: ${role_name}"
+
+      # アタッチされているマネージドポリシーをデタッチ
+      aws iam list-attached-role-policies --role-name "${role_name}" --query 'AttachedPolicies[*].PolicyArn' --output text | tr '\t' '\n' | \
+        while read -r policy_arn; do
+          if [ ! -z "${policy_arn}" ]; then
+            echo "Detaching managed policy: ${policy_arn} from role: ${role_name}"
+            aws iam detach-role-policy --role-name "${role_name}" --policy-arn "${policy_arn}"
+          fi
+        done
+
+      # インラインポリシーを削除
+      aws iam list-role-policies --role-name "${role_name}" --query 'PolicyNames[]' --output text | \
+        while read -r policy_name; do
+          if [ ! -z "${policy_name}" ]; then
+            echo "Removing inline policy: ${policy_name} from role: ${role_name}"
+            aws iam delete-role-policy --role-name "${role_name}" --policy-name "${policy_name}"
+          fi
+        done
+
+      # ロールを削除
+      echo "Deleting role: ${role_name}"
+      aws iam delete-role --role-name "${role_name}"
+    fi
+  done
+```
+
 6. `IAM`の`Users`にてハンズオンに使用したユーザー(`eks-wakaran-user`)を削除
 
 7. `Resource Groups & Tag Editor`にて、`Project: eks-wakaran`というタグが付与されたリソースを削除(「`(補足) リソースが削除されたことの確認方法`」参照)
