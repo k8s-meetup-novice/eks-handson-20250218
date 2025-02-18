@@ -209,8 +209,7 @@ AWSマネジメントコンソールにて、`EKS`および`ECR`, `S3バケッ�
 
 ![alt text](images/image-s3.png)
 
-## 2. 事前準備
-### 2-1. EKSへのアクセス
+## 2. EKSへのアクセス
 
 以下のコマンドを用いて、`EKSクラスタ`(Kubernetesクラスタ)に対する認証情報(`kubeconfig`)を取得します。
 
@@ -229,7 +228,9 @@ ip-172-17-1-126.ap-northeast-1.compute.internal   Ready    <none>   17m   v1.30.
 ip-172-17-3-204.ap-northeast-1.compute.internal   Ready    <none>   18m   v1.30.8-eks-aeac579
 ```
 
-### 2-2. Load Balancer Controllerのデプロイ
+## 3. アプリケーションのデプロイ及びLBを用いた外部公開
+
+### 3-1. Load Balancer Controllerのデプロイ
 
 `scripts`ディレクトリに移動し、`deploy_lb_controller.sh`を実行します。
 
@@ -248,8 +249,8 @@ aws-load-balancer-controller-6d6c5d67f6-682xv   1/1     Running   0          53s
 aws-load-balancer-controller-6d6c5d67f6-s8vkq   1/1     Running   0          53s
 ```
 
-## 3. アプリケーションのデプロイ及びLBを用いた外部公開
-### 3-1. Podのデプロイ
+
+### 3-2. Podのデプロイ
 
 `nginx`の[Pod](https://kubernetes.io/docs/concepts/workloads/pods/)を作成します。
 
@@ -267,7 +268,7 @@ NAME    READY   STATUS    RESTARTS   AGE
 nginx   1/1     Running   0          97s
 ```
 
-### 3-2. Serviceの作成と外部公開
+### 3-3. Serviceの作成と外部公開
 次に作成した`nginx`の`Pod`に対して外部からアクセスするための[Service](https://kubernetes.io/docs/concepts/services-networking/service/)を作成します。
 
 `scripts`ディレクトリに格納されている`service.yaml`マニフェストファイルを確認します。
@@ -493,6 +494,17 @@ eksctl create iamserviceaccount \
 ```
 2025-02-17 14:55:35 [ℹ]  created serviceaccount "default/eks-wakaran-handson-sa"
 ```
+
+以下のコマンドを用いて、`ServiceAccount`が正常に作成されたことを確認します。
+
+```
+kubectl get sa eks-wakaran-handson-sa
+```
+```
+NAME                     SECRETS   AGE
+eks-wakaran-handson-sa   0         119s
+```
+
 
 それでは、作成した`ServiceAccount`を紐づけた`Pod`を新たに起動します。
 以下のコマンドを用いて、マニフェストを作成します。
