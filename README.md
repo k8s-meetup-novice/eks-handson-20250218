@@ -344,19 +344,19 @@ docker pull nginx
 
 ```bash
 ACCOUNT_ID=`aws sts get-caller-identity | jq -r '.Account'`
-aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com
+aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
 ```
 
 Pullしたコンテナイメージに[イメージタグ](https://docs.docker.com/reference/cli/docker/image/tag/)を付与します。
 
 ```bash
-docker tag nginx ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
+docker tag nginx ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
 `ECR`にローカルのコンテナイメージをPushします。
 
 ```bash
-docker push ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
+docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
 AWSマネジメントコンソールから、`ECR`にコンテナイメージが格納されていることを確認します。
@@ -368,7 +368,7 @@ AWSマネジメントコンソールから、`ECR`にコンテナイメージが
 以下のコマンドでは`ECR`に格納したコンテナイメージ(`eks-wakaran-handson-ecr:aws-waiwai`)を指定して、EKSに`Pod`を作成します。
 
 ```bash
-kubectl run nginx-from-ecr --image ${ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
+kubectl run nginx-from-ecr --image ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/eks-wakaran-handson-ecr:aws-waiwai
 ```
 
 作成した`Pod`が起動していることを確認します。
@@ -482,7 +482,7 @@ An error occurred (AccessDenied) ... is not authorized to perform: s3:ListBucket
 まず、`IAM OIDCプロバイダー`を作成します。
 
 ```bash
-eksctl utils associate-iam-oidc-provider --region=ap-northeast-1 --cluster=eks-wakaran-handson-cluster --approve
+eksctl utils associate-iam-oidc-provider --region=${AWS_DEFAULT_REGION} --cluster=eks-wakaran-handson-cluster --approve
 ```
 
 次に`Pod`から`S3バケット`の参照が行えるよう、`IRSA`を利用するための`ServiceAccount`と`IAMロール`を`eksctl`コマンドを用いて作成します。
