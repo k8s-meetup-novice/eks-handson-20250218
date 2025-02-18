@@ -578,7 +578,68 @@ kubectl logs pod-after
 ## 6. クリーンアップ
 
 1. `ECR`に格納されているコンテナイメージの削除
+
+リポジトリ名を確認します：
+
+```bash
+ACCOUNT_ID=`aws sts get-caller-identity | jq -r '.Account'`
+aws ecr describe-repositories --repository-names eks-wakaran-handson-ecr
+```
+
+現在のイメージを確認します：
+
+```bash
+aws ecr describe-images \
+  --repository-name eks-wakaran-handson-ecr \
+  --query 'imageDetails[*].imageTags[*]' \
+  --output text
+# aws-waiwaiタグが表示されることを確認
+```
+
+イメージを削除します：
+
+```bash
+aws ecr batch-delete-image \
+  --repository-name eks-wakaran-handson-ecr \
+  --image-ids imageTag=aws-waiwai
+```
+
+削除後、イメージが削除されたことを確認します：
+
+```bash
+aws ecr describe-images --repository-name eks-wakaran-handson-ecr
+# エラーが返ってくるか、空の結果が表示されることを確認
+```
+
 2. `S3バケット`内にあるファイルの削除
+
+バケット名を確認します：
+
+```bash
+S3_BUCKET_NAME=$(aws s3 ls | grep eks-wakaran-handson-s3 | awk '{print $3}')
+echo $S3_BUCKET_NAME
+```
+
+バケット内のファイルを確認します：
+
+```bash
+aws s3 ls s3://${S3_BUCKET_NAME}
+```
+
+バケット内のファイルをすべて削除します：
+
+```bash
+aws s3 rm s3://${S3_BUCKET_NAME} --recursive
+```
+
+削除後、バケット内が空になっていることを確認します：
+
+```bash
+aws s3 ls s3://${S3_BUCKET_NAME}
+# 出力がないことを確認
+```
+
+
 3. `Service`の削除
 
 ```bash
