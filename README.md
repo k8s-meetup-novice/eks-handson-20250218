@@ -671,8 +671,8 @@ Do you really want to destroy all resources?
 
 7. `codespace`の削除
 
-
-### (補足) リソースが削除されたことの確認方法
+## 補足情報
+### (補足1) リソースが削除されたことの確認方法
 本ハンズオンで作成した全てのリソースには`Project: eks-wakaran`というタグが付与されています。
 [Resource Groups & Tag Editor](https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html)を用いて該当タグが付与されたリソースを検索し、全てのリソースが削除されていることを確認することができます。
 
@@ -695,9 +695,44 @@ Resource Groups
 - `Resource types`:     `All supported resource types`
 - `Tag key`:            `Project`
 - `Optional tag value`: `eks-wakaran`
-を入力し、「`Search resources`」を選択します。
+を入力し「`Add`」をクリックして、「`Search resources`」を選択します。
 
 「`Resource search results`」に何も表示されなければ、ハンズオンに使用した全てのリソースの削除が完了していることになります。
 `6. クリーンアップ`を実施後になんらかのリソースが残存しているようであれば、手動でリソースの削除を行なってください。
 
 ![alt text](images/tag3.png)
+
+### (補足2) VPC数の制限に関して
+
+東京リージョン内でのVPC数が上限に達している場合には、別リージョンで作業する必要があります。
+以下に、オレゴンリージョンを指定する場合の手順を記載します。
+※VPC数の制限値引き上げ申請も可能ですが、即時引き上げはできないため今回は別リージョンでの作業を行うこととします。
+
+#### 現状確認
+
+```bash
+# 特定のリージョンでのVPCの現在数を確認
+aws ec2 describe-vpcs --region "${AWS_DEFAULT_REGION}" --query 'Vpcs[].VpcId' --output text | wc -w
+
+# VPCの制限値を確認
+aws service-quotas get-service-quota \
+    --service-code vpc \
+    --quota-code L-F678F1CE \
+    --region "${AWS_DEFAULT_REGION}"
+```
+
+#### リージョン指定の変更
+
+オレゴンリージョンに変更する場合の手順です（オレゴンである必要はありません）：
+
+```bash
+# 環境変数を変更
+export AWS_DEFAULT_REGION=us-west-2
+echo "AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}"
+```
+
+```bash
+# vars.tf 内のリージョン指定を変更
+sed -i 's/ap-northeast-1/us-west-2/' vars.tf
+cat vars.tf | grep default
+```
